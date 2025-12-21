@@ -11,6 +11,9 @@ import uuid
 from datetime import datetime, timezone
 import asyncio
 
+# --- AI Integration ---
+from emergentintegrations.llm.chat import LlmChat, UserMessage
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -19,6 +22,20 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db_name = os.environ.get('DB_NAME', 'grocerygo')
 db = client[db_name]
+
+# AI Setup
+emergent_key = os.environ.get("EMERGENT_LLM_KEY")
+llm_chat = None
+
+if emergent_key:
+    # Initialize with a default system message
+    llm_chat = LlmChat(
+        api_key=emergent_key,
+        session_id="grocery-go-ai-mapper",
+        system_message="You are a precise grocery item categorizer. You will receive an item name and a list of valid categories. You must return ONLY the exact category name from the list that best matches the item. If no category matches, return 'Unmapped'. Do not provide explanations."
+    ).with_model("openai", "gpt-4o") # Using gpt-4o as requested for intelligence
+else:
+    print("WARNING: EMERGENT_LLM_KEY not found. AI features disabled.")
 
 # Create the main app without a prefix
 app = FastAPI(title="GroceryGo API")
@@ -81,17 +98,38 @@ KEYWORD_TO_CATEGORY = {
 
 # --- HELPER FUNCTIONS ---
 
-def find_category(item_name: str) -> Optional[str]:
-    """Find a category based on keywords in the item name."""
+async def find_category(item_name: str, available_categories: List[str] = None) -> Optional[str]:
+    """Find a category based on keywords or AI."""
     item_lower = item_name.lower()
-    # Direct match first
+    
+    # 1. Direct/Keyword Match (Fast)
     if item_lower in KEYWORD_TO_CATEGORY:
         return KEYWORD_TO_CATEGORY[item_lower]
     
-    # Partial match
     for keyword, category in KEYWORD_TO_CATEGORY.items():
         if keyword in item_lower:
             return category
+    
+    # 2. AI Fallback
+    if llm_chat and available_categories:
+        try:
+            logger.info(f"Invoking AI for item: {item_name}")
+            categories_str = ", ".join(available_categories)
+            prompt = f"Item: '{item_name}'. Categories: [{categories_str}]. Return just the category name."
+            
+            response = await llm_chat.send_message(UserMessage(text=prompt))
+            predicted_category = response.strip().replace("'", "").replace('"', "") # clean up
+            
+            # Verify validity
+            if predicted_category in available_categories:
+                logger.info(f"AI categorized '{item_name}' as '{predicted_category}'")
+                return predicted_category
+            else:
+                logger.warning(f"AI returned invalid category: {predicted_category}")
+                
+        except Exception as e:
+            logger.error(f"AI Categorization failed: {e}")
+            
     return None
 
 def find_aisle_for_category(store: dict, category: str) -> Optional[dict]:
@@ -102,6 +140,13 @@ def find_aisle_for_category(store: dict, category: str) -> Optional[dict]:
         if category in aisle.get('categories', []):
             return aisle
     return None
+
+def get_all_categories_from_store(store: dict) -> List[str]:
+    categories = set()
+    for aisle in store.get('aisles', []):
+        for cat in aisle.get('categories', []):
+            categories.add(cat)
+    return list(categories)
 
 # --- API ROUTES ---
 
@@ -133,7 +178,6 @@ async def create_list(list_create: ShoppingListCreate):
     new_list = ShoppingList(store_id=list_create.store_id)
     # Convert for Mongo
     doc = new_list.model_dump()
-    # doc['created_at'] = doc['created_at'].isoformat() # Keep as datetime for now, motor handles it usually or we can str it
     
     await db.shopping_lists.insert_one(doc)
     return new_list
@@ -153,8 +197,11 @@ async def add_item(list_id: str, item_req: AddItemRequest):
     
     store = await db.stores.find_one({"id": lst['store_id']})
     
-    # 1. Map Item
-    category = find_category(item_req.name)
+    # Gather available categories for this store
+    store_categories = get_all_categories_from_store(store)
+    
+    # 1. Map Item (Async now)
+    category = await find_category(item_req.name, store_categories)
     aisle = find_aisle_for_category(store, category)
     
     new_item = ShoppingItem(
@@ -192,7 +239,6 @@ async def update_item_status(list_id: str, item_id: str, update: UpdateItemReque
         {"$set": {"items.$.is_done": update.is_done}}
     )
     if result.modified_count == 0:
-         # Check if list exists
         lst = await db.shopping_lists.find_one({"id": list_id})
         if not lst:
             raise HTTPException(status_code=404, detail="List not found")
