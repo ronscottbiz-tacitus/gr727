@@ -47,15 +47,23 @@ api_router = APIRouter(prefix="/api")
 
 class Aisle(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str  # e.g., "Aisle 1", "Produce Section"
-    order: int # For sorting the route (1, 2, 3...)
-    categories: List[str] = [] # ["Dairy", "Cheese"]
+    name: str
+    order: int
+    categories: List[str] = []
+    # Visual Coordinates (0-100 grid)
+    x: int = 0
+    y: int = 0
+    width: int = 10
+    height: int = 20
+    orientation: str = "vertical" # vertical or horizontal
 
 class Store(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     address: str
     aisles: List[Aisle] = []
+    width: int = 100
+    height: int = 100
 
 class ShoppingItem(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
