@@ -110,12 +110,15 @@ async def find_category(item_name: str, available_categories: List[str] = None) 
     """Find a category based on keywords or AI."""
     item_lower = item_name.lower()
     
-    # 1. Direct/Keyword Match (Fast)
+    # 1. Direct/Keyword Match (Whole Word Check)
     if item_lower in KEYWORD_TO_CATEGORY:
         return KEYWORD_TO_CATEGORY[item_lower]
     
+    # Check for partial matches but ensure word boundaries or reasonable length
     for keyword, category in KEYWORD_TO_CATEGORY.items():
-        if keyword in item_lower:
+        # Only match if keyword is a significant part or surrounded by spaces
+        # Simple heuristic: space + keyword, keyword + space, or exact
+        if f" {keyword} " in f" {item_lower} ": 
             return category
     
     # 2. AI Fallback
