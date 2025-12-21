@@ -1,32 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getRoute, updateItemStatus } from '../api';
+import { getRoute, updateItemStatus, getList, getStore } from '../api';
 import { Button, Card, CardContent } from '../components/ui';
 import { Check, ChevronRight, ArrowLeft } from 'lucide-react';
+import StoreMap from '../components/StoreMap';
 
 const Navigation = () => {
   const { listId } = useParams();
   const navigate = useNavigate();
   const [route, setRoute] = useState(null);
+  const [storeData, setStoreData] = useState(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  
-  // Local state to track checked items in the current view
-  // In a real app we'd sync this with backend optimistically
   const [checkedItems, setCheckedItems] = useState({});
 
   useEffect(() => {
-    const fetchRoute = async () => {
+    const init = async () => {
       try {
-        const res = await getRoute(listId);
-        setRoute(res.data);
+        // 1. Fetch Route
+        const routeRes = await getRoute(listId);
+        setRoute(routeRes.data);
+        
+        // 2. Fetch Store Map Data (need list -> store_id first)
+        const listRes = await getList(listId);
+        const storeRes = await getStore(listRes.data.store_id);
+        setStoreData(storeRes.data);
+        
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchRoute();
+    init();
   }, [listId]);
 
   const handleToggleItem = async (itemId, isDone) => {
@@ -64,40 +70,25 @@ const Navigation = () => {
   return (
     <div className="flex flex-col h-screen max-h-screen">
       {/* Top Map Context */}
-      <div className="bg-slate-900 text-white p-4 flex-none">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-slate-900 text-white p-4 flex-none shadow-lg z-10">
+        <div className="flex items-center justify-between mb-2">
            <h2 className="font-bold text-lg">In-Store Navigation</h2>
            <span className="text-sm bg-slate-800 px-2 py-1 rounded">
              Step {currentStep.step_number} / {route.route.length}
            </span>
         </div>
         
-        {/* Simplified Active Step Map Visualization */}
-        <div className="flex items-center justify-center space-x-2 my-4">
-            {currentStepIndex > 0 && (
-                <div className="h-16 w-12 bg-slate-800 rounded opacity-50 flex items-center justify-center text-xs text-slate-400">
-                    Prev
-                </div>
-            )}
-            
-            <div className="h-24 w-32 bg-blue-600 rounded-lg shadow-lg ring-4 ring-blue-500/30 flex flex-col items-center justify-center text-center p-2 animate-in zoom-in duration-300">
-                <span className="text-xs text-blue-200 uppercase tracking-wider font-bold">Current</span>
-                <span className="text-xl font-bold">{currentStep.aisle_name}</span>
-            </div>
-
-            {!isLastStep && (
-                <div className="h-16 w-12 bg-slate-800 rounded opacity-50 flex items-center justify-center text-xs text-slate-400">
-                    Next
-                </div>
-            )}
+        {/* SMALL VISUAL MAP for Context */}
+        <div className="h-40 w-full mb-2 bg-white/10 rounded-lg overflow-hidden border border-white/20">
+             <StoreMap 
+                store={storeData} 
+                route={route.route} 
+                currentStepIndex={currentStepIndex}
+             />
         </div>
 
-        {/* Progress Bar */}
-        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-4">
-            <div 
-                className="bg-blue-500 h-full transition-all duration-500" 
-                style={{ width: `${progress}%` }}
-            />
+        <div className="text-center">
+            <span className="text-xl font-bold text-blue-200">{currentStep.aisle_name}</span>
         </div>
       </div>
 
