@@ -331,7 +331,7 @@ async def seed_data():
                 Aisle(name="Aisle 1", order=2, categories=["Bakery", "Bread"]),
                 Aisle(name="Aisle 2", order=3, categories=["Dairy", "Eggs", "Cheese"]),
                 Aisle(name="Aisle 3", order=4, categories=["Meat", "Seafood"]),
-                Aisle(name="Aisle 4", order=5, categories=["Pasta & Grains", "Canned Goods", "Soup"]),
+                Aisle(name="Aisle 4", order=5, categories=["Pasta & Grains", "Canned Goods", "Soup", "Condiments", "Sauces", "Spices", "Oil & Vinegar", "International", "Dinner Kits", "Mexican", "Asian"]),
                 Aisle(name="Aisle 5", order=6, categories=["Snacks", "Candy", "Chips"]),
                 Aisle(name="Aisle 6", order=7, categories=["Beverages", "Soda", "Water"]),
                 Aisle(name="Aisle 7", order=8, categories=["Frozen", "Ice Cream"]),
