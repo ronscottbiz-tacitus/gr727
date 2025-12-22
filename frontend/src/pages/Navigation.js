@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRoute, updateItemStatus, getList, getStore } from '../api';
-import { Button, Card, CardContent } from '../components/ui';
-import { Check, ChevronRight, ArrowLeft, Maximize2, Minimize2 } from 'lucide-react';
+import { Button } from '../components/ui';
+import { Check, ArrowLeft, MapPin } from 'lucide-react';
 import StoreMap from '../components/StoreMap';
 
 const Navigation = () => {
@@ -10,16 +10,25 @@ const Navigation = () => {
   const navigate = useNavigate();
   const [route, setRoute] = useState(null);
   const [storeData, setStoreData] = useState(null);
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [checkedItems, setCheckedItems] = useState({});
-  const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [userLocation, setUserLocation] = useState(null); // {x, y}
 
   useEffect(() => {
     const init = async () => {
       try {
         const routeRes = await getRoute(listId);
         setRoute(routeRes.data);
+        
+        // Flatten items from route steps for easier list rendering
+        const allItems = [];
+        routeRes.data.route.forEach(step => {
+            step.items.forEach(item => {
+                allItems.push({ ...item, aisle_id: step.aisle_id, aisle_name: step.aisle_name });
+            });
+        });
+        setItems(allItems);
+
         const listRes = await getList(listId);
         const storeRes = await getStore(listRes.data.store_id);
         setStoreData(storeRes.data);
@@ -33,7 +42,24 @@ const Navigation = () => {
   }, [listId]);
 
   const handleToggleItem = async (itemId, isDone) => {
-    setCheckedItems(prev => ({ ...prev, [itemId]: isDone }));
+    // Optimistic Update
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, is_done: isDone } : i));
+    
+    // If marking as done, update User Location to this item's aisle location
+    if (isDone && storeData) {
+        const item = items.find(i => i.id === itemId);
+        if (item && item.aisle_id) {
+            const aisle = storeData.aisles.find(a => a.id === item.aisle_id);
+            if (aisle) {
+                // Set location to center of aisle
+                setUserLocation({
+                    x: aisle.x + (aisle.width / 2),
+                    y: aisle.y + (aisle.height / 2)
+                });
+            }
+        }
+    }
+
     try {
         await updateItemStatus(listId, itemId, isDone);
     } catch(e) {
@@ -41,115 +67,115 @@ const Navigation = () => {
     }
   };
 
-  const handleNext = () => {
-    if (currentStepIndex < route.route.length - 1) {
-      setCurrentStepIndex(prev => prev + 1);
-      window.scrollTo(0, 0);
-    } else {
-      navigate(`/list/${listId}/complete`);
-    }
+  const handleSetEntrance = (loc) => {
+      setUserLocation(loc);
   };
 
-  const handlePrev = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(prev => prev - 1);
-    }
-  };
+  if (loading) return <div className="p-8 text-center">Loading...</div>;
 
-  if (loading) return <div className="p-8 text-center">Loading navigation...</div>;
-
-  const currentStep = route.route[currentStepIndex];
-  const isLastStep = currentStepIndex === route.route.length - 1;
+  // Split items into Pending and Done
+  const pendingItems = items.filter(i => !i.is_done);
+  const doneItems = items.filter(i => i.is_done);
 
   return (
     <div className="flex flex-col h-screen max-h-screen bg-slate-50">
-      {/* Top Map Context - Made Collapsible/Expandable */}
-      <div className={`bg-slate-900 text-white flex-none shadow-lg z-20 transition-all duration-300 ease-in-out relative ${isMapExpanded ? 'h-[60vh]' : 'h-48'}`}>
-        
-        {/* Header Row */}
-        <div className="flex items-center justify-between p-4 pb-2">
-           <div className="flex flex-col">
-               <h2 className="font-bold text-lg leading-tight">Navigation</h2>
-               <span className="text-xs text-slate-400">Step {currentStep.step_number} of {route.route.length}</span>
-           </div>
-           
-           <button 
-             onClick={() => setIsMapExpanded(!isMapExpanded)}
-             className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
-           >
-             {isMapExpanded ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-           </button>
+      {/* Top Map Area - Fixed Size (Large) */}
+      <div className="bg-slate-900 text-white flex-none shadow-lg z-20 h-[55vh] relative flex flex-col">
+        <div className="flex items-center justify-between p-4 pb-2 z-10">
+           <h2 className="font-bold text-lg flex items-center">
+               <MapPin className="mr-2 h-5 w-5 text-blue-400" />
+               Store Locator
+           </h2>
+           <Button variant="ghost" size="sm" className="text-slate-300" onClick={() => navigate('/')}>
+               Exit
+           </Button>
         </div>
         
-        {/* Map Container */}
-        <div className={`w-full px-4 transition-all duration-300 ${isMapExpanded ? 'h-[calc(100%-4rem)]' : 'h-28'}`}>
-             <div className="h-full w-full bg-white/5 rounded-lg overflow-hidden border border-white/10 relative">
+        <div className="flex-1 w-full px-4 pb-4 overflow-hidden relative">
+             <div className="h-full w-full bg-white/5 rounded-xl border border-white/10 shadow-inner">
                  <StoreMap 
                     store={storeData} 
-                    route={route.route} 
-                    currentStepIndex={currentStepIndex}
+                    items={items} 
+                    userLocation={userLocation}
+                    onEntranceClick={handleSetEntrance}
                  />
-                 {/* Current Target Label Overlay */}
-                 <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md px-3 py-1 rounded text-sm font-bold border border-white/20 shadow-lg">
-                    {currentStep.aisle_name}
-                 </div>
+                 
+                 {/* Instruction Overlay */}
+                 {!userLocation && (
+                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 backdrop-blur px-4 py-2 rounded-full text-sm font-bold animate-pulse pointer-events-none">
+                         Tap Entrance to Start
+                     </div>
+                 )}
              </div>
         </div>
       </div>
 
-      {/* Checklist Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-4 bg-white border-b border-slate-100 sticky top-0 z-10">
-                <h3 className="font-semibold text-slate-900 flex items-center justify-between">
-                    <span>Items to Pick</span>
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                        {currentStep.items.length}
+      {/* Checklist Area - Scrollable */}
+      <div className="flex-1 overflow-y-auto bg-white rounded-t-2xl -mt-4 z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] relative">
+        <div className="p-4 space-y-6 min-h-full">
+            
+            {/* Pending Items */}
+            <div className="space-y-3">
+                <h3 className="font-bold text-slate-800 flex items-center">
+                    To Pick
+                    <span className="ml-2 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
+                        {pendingItems.length}
                     </span>
                 </h3>
-            </div>
-            
-            <div className="divide-y divide-slate-100">
-                {currentStep.items.map((item) => {
-                    const isChecked = checkedItems[item.id] || item.is_done;
-                    return (
-                        <div 
-                            key={item.id} 
-                            onClick={() => handleToggleItem(item.id, !isChecked)}
-                            className={`p-4 flex items-center space-x-4 cursor-pointer transition-colors active:bg-slate-100 ${isChecked ? 'bg-slate-50/50' : 'hover:bg-slate-50'}`}
-                        >
-                            <div className={`
-                                h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 shrink-0
-                                ${isChecked ? 'bg-green-500 border-green-500 text-white scale-110' : 'border-slate-300 bg-white'}
-                            `}>
-                                {isChecked && <Check className="h-5 w-5" />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <span className={`block font-medium text-lg truncate ${isChecked ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
-                                    {item.name}
+                
+                {pendingItems.length === 0 && (
+                    <div className="text-center py-8 text-slate-400">
+                        All items picked! 🎉
+                    </div>
+                )}
+
+                {pendingItems.map((item) => (
+                    <div 
+                        key={item.id} 
+                        onClick={() => handleToggleItem(item.id, true)}
+                        className="flex items-center p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-blue-200 active:bg-blue-50 transition-all cursor-pointer"
+                    >
+                        <div className="h-10 w-10 rounded-full border-2 border-slate-200 flex items-center justify-center mr-3 bg-slate-50">
+                             <div className="h-3 w-3 rounded-full bg-slate-200"></div>
+                        </div>
+                        <div className="flex-1">
+                            <div className="font-semibold text-slate-900">{item.name}</div>
+                            <div className="text-xs text-slate-500 font-medium flex items-center">
+                                <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+                                    {item.aisle_name || "Unmapped"}
                                 </span>
-                                {item.category && !isChecked && (
-                                    <span className="text-xs text-slate-500">{item.category}</span>
-                                )}
                             </div>
                         </div>
-                    );
-                })}
+                    </div>
+                ))}
             </div>
-        </div>
-      </div>
 
-      {/* Footer Actions */}
-      <div className="p-4 bg-white border-t border-slate-200 flex-none flex space-x-3 safe-area-bottom">
-        {currentStepIndex > 0 && (
-             <Button variant="outline" onClick={handlePrev} className="flex-none w-14 h-14 rounded-xl border-slate-300">
-                 <ArrowLeft className="h-6 w-6" />
-             </Button>
-        )}
-        <Button onClick={handleNext} className={`flex-1 text-lg h-14 rounded-xl shadow-lg shadow-blue-500/20 ${isLastStep ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
-            {isLastStep ? "Finish Trip" : "Next Aisle"}
-            {!isLastStep && <ChevronRight className="ml-2 h-6 w-6" />}
-        </Button>
+            {/* Done Items */}
+            {doneItems.length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-slate-100">
+                    <h3 className="font-bold text-slate-400 text-sm uppercase tracking-wider">Completed</h3>
+                    {doneItems.map((item) => (
+                        <div 
+                            key={item.id} 
+                            onClick={() => handleToggleItem(item.id, false)}
+                            className="flex items-center p-2 opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
+                        >
+                            <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center mr-3">
+                                <Check className="h-3 w-3 text-white" />
+                            </div>
+                            <span className="text-slate-500 line-through">{item.name}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+            
+            {pendingItems.length === 0 && doneItems.length > 0 && (
+                 <Button className="w-full mt-4 bg-green-600 hover:bg-green-700 h-12 text-lg" onClick={() => navigate(`/list/${listId}/complete`)}>
+                     Finish Trip
+                 </Button>
+            )}
+
+        </div>
       </div>
     </div>
   );
