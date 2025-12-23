@@ -1,18 +1,14 @@
 import React, { useMemo } from 'react';
 import { getCategoryIcon } from '../utils/categoryIcons';
 
-const StoreMap = ({ store, items = [], userLocation, onEntranceClick }) => {
+const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClick }) => {
     // Default canvas size
     const WIDTH = 100;
     const HEIGHT = 100;
 
-    // Entrance coordinates based on Store Type?
-    // Let's assume bottom center for all for now, or use store metadata if we had it.
-    // For Safety/Target/HomeDepot seed, 50,95 is a safe "Entry Zone".
     const ENTRANCE_X = 50;
     const ENTRANCE_Y = 95;
 
-    // Group items by Aisle for heatmapping, but we also want to draw specific item icons.
     const aisleStatus = useMemo(() => {
         if (!store || !items) return {};
         const status = {}; 
@@ -48,7 +44,7 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick }) => {
                     let strokeColor = '#cbd5e1';
                     
                     if (hasItems) {
-                        fillColor = '#dbeafe'; // Very light blue
+                        fillColor = '#dbeafe'; 
                         strokeColor = '#60a5fa'; 
                     }
 
@@ -62,9 +58,8 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick }) => {
                                 stroke={strokeColor}
                                 strokeWidth="0.5"
                             />
-                            
-                            {/* Aisle Name (Small) */}
-                            {aisle.width > 8 && aisle.height > 8 && (
+                             {/* Aisle Name (Small) */}
+                             {aisle.width > 8 && aisle.height > 8 && (
                                 <text 
                                     x={aisle.width/2} 
                                     y={aisle.height/2} 
@@ -82,42 +77,64 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick }) => {
                     );
                 })}
 
-                {/* ITEM ICONS (The "Pulsing" Representations) */}
+                {/* ITEM ICONS with Labels */}
                 {items.filter(i => !i.is_done && i.aisle_id).map((item, idx) => {
                     const aisle = store.aisles.find(a => a.id === item.aisle_id);
                     if (!aisle) return null;
 
-                    // Randomize position slightly within the aisle so icons don't stack perfectly
-                    // Use item ID hash or index for deterministic jitter
-                    const pseudoRandom = (idx * 7) % 10 / 10; 
+                    // Deterministic jitter
+                    const pseudoRandom = (item.id.charCodeAt(0) % 10) / 10; 
+                    const pseudoRandom2 = (item.id.charCodeAt(1) % 10) / 10;
+                    
                     const itemX = aisle.x + (aisle.width * 0.2) + (aisle.width * 0.6 * pseudoRandom);
-                    const itemY = aisle.y + (aisle.height * 0.2) + (aisle.height * 0.6 * ((idx * 3)%10/10));
+                    const itemY = aisle.y + (aisle.height * 0.2) + (aisle.height * 0.6 * pseudoRandom2);
 
                     const IconComponent = getCategoryIcon(item.category);
+                    const labelY = itemY + 4; // Below the icon
 
                     return (
-                        <g key={item.id} transform={`translate(${itemX}, ${itemY})`}>
+                        <g 
+                            key={item.id} 
+                            onClick={() => onItemClick && onItemClick(item)}
+                            className="cursor-pointer"
+                        >
+                            {/* Hit Area for easier tapping */}
+                            <circle cx={itemX} cy={itemY} r="5" fill="transparent" />
+
                             {/* Pulsing Ring */}
-                            <circle r="3" fill="#ef4444" fillOpacity="0.2" className="animate-ping" />
+                            <circle cx={itemX} cy={itemY} r="3" fill="#ef4444" fillOpacity="0.2" className="animate-ping" />
                             {/* Icon Background */}
-                            <circle r="2" fill="#ef4444" stroke="white" strokeWidth="0.2" />
-                            {/* ForeignObject to render React Icon */}
-                            <foreignObject x="-1.5" y="-1.5" width="3" height="3">
-                                <div className="flex items-center justify-center w-full h-full text-white">
+                            <circle cx={itemX} cy={itemY} r="2.2" fill="#ef4444" stroke="white" strokeWidth="0.2" />
+                            
+                            {/* Icon */}
+                            <foreignObject x={itemX - 1.5} y={itemY - 1.5} width="3" height="3">
+                                <div className="flex items-center justify-center w-full h-full text-white pointer-events-none">
                                     <IconComponent size={2.5} strokeWidth={2.5} />
                                 </div>
                             </foreignObject>
+
+                            {/* Text Label */}
+                            <text 
+                                x={itemX} 
+                                y={labelY} 
+                                fontSize="2.5" 
+                                textAnchor="middle" 
+                                fill="#1e293b" 
+                                fontWeight="bold"
+                                className="pointer-events-none bg-white/80"
+                                style={{ textShadow: "0px 0px 2px white" }}
+                            >
+                                {item.name}
+                            </text>
                         </g>
                     )
                 })}
 
                 {/* User Location */}
                 {userLocation && (
-                    <g transform={`translate(${userLocation.x}, ${userLocation.y})`} className="transition-all duration-700 ease-out">
+                    <g transform={`translate(${userLocation.x}, ${userLocation.y})`} className="transition-all duration-700 ease-out pointer-events-none">
                          <circle r="5" fill="#3b82f6" fillOpacity="0.3" className="animate-ping" />
                          <circle r="2.5" fill="#3b82f6" stroke="white" strokeWidth="0.5" className="shadow-lg" />
-                         {/* Direction Cone (Optional aesthetic) */}
-                         <path d="M 0 0 L -2 -4 L 2 -4 Z" fill="#3b82f6" opacity="0.5" transform="rotate(45)" />
                     </g>
                 )}
 
