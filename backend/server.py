@@ -61,6 +61,7 @@ class Store(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     address: str
+    store_type: str = "grocery" # grocery, department, hardware
     aisles: List[Aisle] = []
     width: int = 100
     height: int = 100
