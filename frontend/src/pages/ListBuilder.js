@@ -1,31 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getList, addItem, removeItem } from '../api';
-import { Button, Input, Card, CardContent, Badge } from '../components/ui';
+import { getList, addItem, removeItem, getStore } from '../api';
+import { Button, Input, Card, CardContent } from '../components/ui';
 import { Plus, Trash2, ArrowRight, ShoppingBag } from 'lucide-react';
 
 const ListBuilder = () => {
   const { listId } = useParams();
   const navigate = useNavigate();
   const [list, setList] = useState(null);
+  const [store, setStore] = useState(null);
   const [newItem, setNewItem] = useState('');
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    loadList();
+    const loadData = async () => {
+      try {
+        const listRes = await getList(listId);
+        setList(listRes.data);
+        
+        const storeRes = await getStore(listRes.data.store_id);
+        setStore(storeRes.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, [listId]);
-
-  const loadList = async () => {
-    try {
-      const res = await getList(listId);
-      setList(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddItem = async (e) => {
     e.preventDefault();
@@ -52,20 +55,30 @@ const ListBuilder = () => {
     }
   };
 
+  const getPlaceholder = () => {
+      if (!store) return "e.g. Milk, Bread...";
+      const type = store.store_type || 'grocery';
+      if (type === 'hardware') return "e.g. Hammer, Paint, Plywood...";
+      if (type === 'department') return "e.g. Shirt, Shampoo, Lego...";
+      return "e.g. Milk, Bread, Apples...";
+  };
+
   if (loading) return <div className="p-8 text-center">Loading list...</div>;
 
   return (
     <div className="space-y-6 p-4 pb-24 relative min-h-screen">
       <div className="space-y-1">
         <h2 className="text-2xl font-bold">Shopping List</h2>
-        <p className="text-slate-500 text-sm">Add items and we'll map them for you.</p>
+        <p className="text-slate-500 text-sm">
+            Shopping at <span className="font-semibold text-slate-700">{store?.name}</span>
+        </p>
       </div>
 
       <form onSubmit={handleAddItem} className="flex space-x-2">
         <Input 
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
-          placeholder="e.g. Milk, Bread, Apples..."
+          placeholder={getPlaceholder()}
           className="flex-1"
           autoFocus
         />
@@ -112,9 +125,10 @@ const ListBuilder = () => {
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 max-w-md mx-auto">
           <Button 
             className="w-full h-12 text-lg shadow-lg" 
-            onClick={() => navigate(`/list/${listId}/route`)}
+            onClick={() => navigate(`/list/${listId}/navigate`)} // Direct to nav, skipping "Route Overview" if we want faster flow, but user said "experience this flow... pick items... see layout". 
+            // Original flow was List -> Overview -> Nav. I'll keep it for now.
           >
-            Generate Route
+            Start Shopping
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
