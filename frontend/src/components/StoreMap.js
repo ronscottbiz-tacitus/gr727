@@ -26,6 +26,16 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClic
 
     if (!store) return null;
 
+    // Helper to get deterministic hash from string
+    const getHash = (str) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash << 5) - hash + str.charCodeAt(i);
+            hash |= 0;
+        }
+        return Math.abs(hash);
+    };
+
     return (
         <div className="w-full h-full bg-slate-50 relative overflow-hidden touch-none select-none">
             <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full h-full">
@@ -35,40 +45,50 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClic
                 </pattern>
                 <rect width="100" height="100" fill="url(#grid)" />
 
-                {/* Aisles */}
+                {/* Aisles Rendered as SHELVES + PATH */}
                 {store.aisles.map(aisle => {
-                    const stat = aisleStatus[aisle.id];
-                    const hasItems = stat && stat.unchecked > 0;
-                    
-                    let fillColor = '#e2e8f0'; 
-                    let strokeColor = '#cbd5e1';
-                    
-                    if (hasItems) {
-                        fillColor = '#dbeafe'; 
-                        strokeColor = '#60a5fa'; 
-                    }
+                    const isVertical = aisle.height > aisle.width;
+                    const SHELF_DEPTH = 1.5; // Visual depth of shelf
 
                     return (
-                        <g key={aisle.id} transform={`translate(${aisle.x}, ${aisle.y})`}>
+                        <g key={aisle.id}>
+                            {/* The Floor (Walkable Area) */}
                             <rect 
-                                width={aisle.width} 
-                                height={aisle.height} 
+                                x={aisle.x} y={aisle.y} 
+                                width={aisle.width} height={aisle.height} 
+                                fill="#e2e8f0" 
                                 rx="1"
-                                fill={fillColor}
-                                stroke={strokeColor}
-                                strokeWidth="0.5"
                             />
-                             {/* Aisle Name (Small) */}
-                             {aisle.width > 8 && aisle.height > 8 && (
+
+                            {/* The Shelves (Darker Borders) */}
+                            {isVertical ? (
+                                <>
+                                    {/* Left Shelf */}
+                                    <rect x={aisle.x} y={aisle.y} width={SHELF_DEPTH} height={aisle.height} fill="#94a3b8" rx="0.5" />
+                                    {/* Right Shelf */}
+                                    <rect x={aisle.x + aisle.width - SHELF_DEPTH} y={aisle.y} width={SHELF_DEPTH} height={aisle.height} fill="#94a3b8" rx="0.5" />
+                                </>
+                            ) : (
+                                <>
+                                    {/* Top Shelf */}
+                                    <rect x={aisle.x} y={aisle.y} width={aisle.width} height={SHELF_DEPTH} fill="#94a3b8" rx="0.5" />
+                                    {/* Bottom Shelf */}
+                                    <rect x={aisle.x} y={aisle.y + aisle.height - SHELF_DEPTH} width={aisle.width} height={SHELF_DEPTH} fill="#94a3b8" rx="0.5" />
+                                </>
+                            )}
+                            
+                            {/* Aisle Name Label (Centered) */}
+                            {aisle.width > 8 && aisle.height > 8 && (
                                 <text 
-                                    x={aisle.width/2} 
-                                    y={aisle.height/2} 
+                                    x={aisle.x + aisle.width/2} 
+                                    y={aisle.y + aisle.height/2} 
                                     fontSize="2" 
                                     textAnchor="middle"
                                     dominantBaseline="middle"
-                                    fill="#94a3b8"
-                                    opacity="0.8"
-                                    style={aisle.height > aisle.width ? { writingMode: 'vertical-rl', textOrientation: 'mixed' } : {}}
+                                    fill="#64748b"
+                                    opacity="0.6"
+                                    fontWeight="bold"
+                                    style={isVertical ? { writingMode: 'vertical-rl', textOrientation: 'mixed' } : {}}
                                 >
                                     {aisle.name.replace("Aisle ", "").replace(" Section", "")}
                                 </text>
@@ -77,20 +97,36 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClic
                     );
                 })}
 
-                {/* ITEM ICONS with Labels */}
+                {/* ITEM ICONS (Snapped to Shelves) */}
                 {items.filter(i => !i.is_done && i.aisle_id).map((item, idx) => {
                     const aisle = store.aisles.find(a => a.id === item.aisle_id);
                     if (!aisle) return null;
 
-                    // Deterministic jitter
-                    const pseudoRandom = (item.id.charCodeAt(0) % 10) / 10; 
-                    const pseudoRandom2 = (item.id.charCodeAt(1) % 10) / 10;
+                    const isVertical = aisle.height > aisle.width;
+                    const hash = getHash(item.id + item.name); // Deterministic randomness
                     
-                    const itemX = aisle.x + (aisle.width * 0.2) + (aisle.width * 0.6 * pseudoRandom);
-                    const itemY = aisle.y + (aisle.height * 0.2) + (aisle.height * 0.6 * pseudoRandom2);
+                    // 1. Determine Position along Length (0.1 to 0.9) to avoid edges
+                    // Use modulo to spread items: (hash % 100) / 100
+                    const lengthPos = 0.1 + ((hash % 80) / 100); 
+                    
+                    // 2. Determine Side (Left/Right or Top/Bottom)
+                    const isSideA = hash % 2 === 0;
+
+                    let itemX, itemY;
+                    const OFFSET = 0; // Shift slightly onto the shelf
+
+                    if (isVertical) {
+                        itemY = aisle.y + (aisle.height * lengthPos);
+                        // Left or Right
+                        itemX = isSideA ? (aisle.x + OFFSET) : (aisle.x + aisle.width - OFFSET);
+                    } else {
+                        itemX = aisle.x + (aisle.width * lengthPos);
+                        // Top or Bottom
+                        itemY = isSideA ? (aisle.y + OFFSET) : (aisle.y + aisle.height - OFFSET);
+                    }
 
                     const IconComponent = getCategoryIcon(item.category);
-                    const labelY = itemY + 4; // Below the icon
+                    const labelY = itemY + 4.5; 
 
                     return (
                         <g 
@@ -98,7 +134,7 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClic
                             onClick={() => onItemClick && onItemClick(item)}
                             className="cursor-pointer"
                         >
-                            {/* Hit Area for easier tapping */}
+                            {/* Hit Area */}
                             <circle cx={itemX} cy={itemY} r="5" fill="transparent" />
 
                             {/* Pulsing Ring */}
@@ -117,7 +153,7 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClic
                             <text 
                                 x={itemX} 
                                 y={labelY} 
-                                fontSize="2.5" 
+                                fontSize="2" 
                                 textAnchor="middle" 
                                 fill="#1e293b" 
                                 fontWeight="bold"
