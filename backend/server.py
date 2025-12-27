@@ -216,11 +216,29 @@ async def add_item(list_id: str, item_req: AddItemRequest):
     category = await find_category(item_req.name, store_categories)
     aisle = find_aisle_for_category(store, category)
     
+    # Fallback for Unmapped items
+    aisle_id_final = None
+    aisle_name_final = None
+    
+    if aisle:
+        aisle_id_final = aisle['id']
+        aisle_name_final = aisle['name']
+    else:
+        # Find the "Misc" or "Customer Service" aisle
+        # Look for order=0 or name containing "Service" or "Desk"
+        misc_aisle = next((a for a in store.get('aisles', []) if a.get('order') == 0), None)
+        if misc_aisle:
+            aisle_id_final = misc_aisle['id']
+            aisle_name_final = misc_aisle['name'] + " (Ask Here)"
+        else:
+            # Fallback if even misc aisle missing (shouldn't happen with v4 seed)
+            aisle_name_final = "Unmapped"
+
     new_item = ShoppingItem(
         name=item_req.name,
         category=category,
-        aisle_id=aisle['id'] if aisle else None,
-        aisle_name=aisle['name'] if aisle else None
+        aisle_id=aisle_id_final,
+        aisle_name=aisle_name_final
     )
     
     # 2. Add to List
