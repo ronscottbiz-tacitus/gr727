@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRoute, updateItemStatus, getList, getStore } from '../api';
 import { Button } from '../components/ui';
-import { ArrowLeft, CheckCircle, List } from 'lucide-react';
+import { Check, ArrowLeft, MapPin, ChevronUp, ChevronDown, ShoppingBag } from 'lucide-react';
 import StoreMap from '../components/StoreMap';
 import { getCategoryIcon } from '../utils/categoryIcons';
 
@@ -14,7 +14,9 @@ const Navigation = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null); 
-  const [showListModal, setShowListModal] = useState(false); // Only show if user asks
+  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  
+  const sheetRef = useRef(null);
 
   useEffect(() => {
     const init = async () => {
@@ -42,28 +44,25 @@ const Navigation = () => {
     init();
   }, [listId]);
 
-  const handleToggleItem = async (item) => {
-      // If item is already done, maybe uncheck it? Or just ignore for map taps?
-      // Let's toggle.
-      const isDone = !item.is_done;
-      
-      // Optimistic
-      setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_done: isDone } : i));
+  const handleToggleItem = async (itemId, isDone) => {
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, is_done: isDone } : i));
+    
+    if (isDone && storeData) {
+        const item = items.find(i => i.id === itemId);
+        if (item && item.aisle_id) {
+            const aisle = storeData.aisles.find(a => a.id === item.aisle_id);
+            if (aisle) {
+                setUserLocation({
+                    x: aisle.x + (aisle.width / 2),
+                    y: aisle.y + (aisle.height / 2)
+                });
+            }
+        }
+    }
 
-      // Move User
-      if (isDone && storeData && item.aisle_id) {
-          const aisle = storeData.aisles.find(a => a.id === item.aisle_id);
-          if (aisle) {
-              setUserLocation({
-                  x: aisle.x + (aisle.width / 2),
-                  y: aisle.y + (aisle.height / 2)
-              });
-          }
-      }
-
-      try {
-          await updateItemStatus(listId, item.id, isDone);
-      } catch(e) { console.error(e); }
+    try {
+        await updateItemStatus(listId, itemId, isDone);
+    } catch(e) { console.error(e); }
   };
 
   const handleSetEntrance = (loc) => {
@@ -72,70 +71,96 @@ const Navigation = () => {
 
   if (loading) return <div className="h-screen flex items-center justify-center bg-slate-900 text-white">Loading Map...</div>;
 
-  const pendingCount = items.filter(i => !i.is_done).length;
+  const pendingItems = items.filter(i => !i.is_done);
+  const doneItems = items.filter(i => i.is_done);
 
   return (
-    <div className="h-screen w-full bg-slate-50 relative overflow-hidden flex flex-col">
+    <div className="h-screen w-full bg-slate-900 relative overflow-hidden flex flex-col">
       
-      {/* FULL SCREEN MAP */}
+      {/* FULL SCREEN MAP LAYER */}
       <div className="absolute inset-0 z-0">
           <StoreMap 
             store={storeData} 
             items={items} 
             userLocation={userLocation}
             onEntranceClick={handleSetEntrance}
-            onItemClick={handleToggleItem}
           />
       </div>
 
-      {/* Top Header */}
+      {/* Top Bar Overlay */}
       <div className="absolute top-0 left-0 right-0 p-4 z-10 flex justify-between items-start pointer-events-none">
-          <div className="bg-white/90 backdrop-blur shadow-lg rounded-full px-4 py-2 flex items-center pointer-events-auto cursor-pointer" onClick={() => navigate('/')}>
+          <div className="bg-white/90 backdrop-blur shadow-lg rounded-full px-4 py-2 flex items-center pointer-events-auto" onClick={() => navigate('/')}>
                <ArrowLeft className="h-5 w-5 mr-2 text-slate-700" />
                <span className="font-bold text-slate-800">{storeData?.name}</span>
           </div>
-
-          <div className="bg-white/90 backdrop-blur shadow-lg rounded-full px-4 py-2 flex items-center pointer-events-auto cursor-pointer" onClick={() => setShowListModal(true)}>
-               <List className="h-5 w-5 mr-2 text-blue-600" />
-               <span className="font-bold text-slate-800">{pendingCount} left</span>
-          </div>
       </div>
 
-      {/* Completion Overlay (if all done) */}
-      {pendingCount === 0 && items.length > 0 && (
-          <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-20 w-3/4 animate-in slide-in-from-bottom-10 fade-in duration-500">
-              <Button className="w-full bg-green-600 hover:bg-green-700 h-14 text-lg shadow-xl rounded-full" onClick={() => navigate(`/list/${listId}/complete`)}>
-                  <CheckCircle className="mr-2 h-6 w-6" />
-                  Finish Trip
-              </Button>
-          </div>
-      )}
-
-      {/* Optional List Modal (Hidden by default as requested) */}
-      {showListModal && (
-          <div className="absolute inset-0 bg-black/50 z-30 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm" onClick={() => setShowListModal(false)}>
-              <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl h-[70vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                  <div className="p-4 border-b border-slate-100 flex justify-between items-center">
-                      <h3 className="font-bold text-lg">Shopping List</h3>
-                      <Button variant="ghost" size="sm" onClick={() => setShowListModal(false)}>Close</Button>
+      {/* Floating Bottom Sheet List */}
+      <div 
+        ref={sheetRef}
+        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.2)] z-20 transition-all duration-500 ease-in-out flex flex-col
+            ${isSheetExpanded ? 'h-[80vh]' : 'h-[25vh]'}`}
+      >
+          {/* Handle / Header */}
+          <div 
+             className="w-full p-4 flex flex-col items-center cursor-pointer flex-none border-b border-slate-100"
+             onClick={() => setIsSheetExpanded(!isSheetExpanded)}
+          >
+              <div className="w-12 h-1.5 bg-slate-300 rounded-full mb-3" />
+              <div className="w-full flex justify-between items-center px-2">
+                  <div className="flex items-center">
+                      <ShoppingBag className="text-blue-600 mr-2 h-5 w-5" />
+                      <span className="font-bold text-lg text-slate-800">
+                          {pendingItems.length} items left
+                      </span>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                       {items.map(item => {
-                           const Icon = getCategoryIcon(item.category);
-                           return (
-                               <div key={item.id} className="flex items-center p-3 border border-slate-100 rounded-lg" onClick={() => handleToggleItem(item)}>
-                                   <div className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 ${item.is_done ? 'bg-green-100 text-green-600' : 'bg-red-50 text-red-500'}`}>
-                                       <Icon size={16} />
-                                   </div>
-                                   <span className={`flex-1 font-medium ${item.is_done ? 'line-through text-slate-400' : 'text-slate-900'}`}>{item.name}</span>
-                                   {item.is_done && <CheckCircle className="h-5 w-5 text-green-500" />}
-                               </div>
-                           )
-                       })}
-                  </div>
+                  {isSheetExpanded ? <ChevronDown className="text-slate-400" /> : <ChevronUp className="text-slate-400" />}
               </div>
           </div>
-      )}
+
+          {/* List Content */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 pb-20"> {/* Added pb-20 for logo/CTA clearance */}
+               {pendingItems.map((item) => {
+                   const Icon = getCategoryIcon(item.category);
+                   return (
+                    <div 
+                        key={item.id} 
+                        onClick={() => handleToggleItem(item.id, true)}
+                        className="flex items-center p-3 bg-white border border-slate-200 rounded-xl shadow-sm active:scale-[0.98] transition-transform"
+                    >
+                        <div className="h-10 w-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center mr-3 border border-red-100">
+                             <Icon size={20} />
+                        </div>
+                        <div className="flex-1">
+                            <div className="font-semibold text-slate-900">{item.name}</div>
+                            <div className="text-xs text-slate-500">{item.aisle_name}</div>
+                        </div>
+                        <div className="h-6 w-6 rounded-full border-2 border-slate-200" />
+                    </div>
+                   );
+               })}
+
+               {doneItems.length > 0 && (
+                   <div className="pt-4 mt-4 border-t border-slate-200">
+                       <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Done</h4>
+                       {doneItems.map(item => (
+                           <div key={item.id} className="flex items-center p-2 opacity-50" onClick={() => handleToggleItem(item.id, false)}>
+                               <Check className="h-4 w-4 mr-2 text-green-600" />
+                               <span className="text-slate-500 line-through">{item.name}</span>
+                           </div>
+                       ))}
+                   </div>
+               )}
+
+               {pendingItems.length === 0 && (
+                   <div className="mb-12"> {/* Wrapper for extra space */}
+                       <Button className="w-full mt-4 bg-green-600 h-12 text-lg shadow-xl" onClick={() => navigate(`/list/${listId}/complete`)}>
+                           Finish Shopping
+                       </Button>
+                   </div>
+               )}
+          </div>
+      </div>
 
     </div>
   );
