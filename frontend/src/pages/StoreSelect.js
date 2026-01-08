@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStores, createList } from '../api';
-import { Card, CardHeader, CardTitle, CardContent, Button } from '../components/ui';
-import { MapPin, ChevronRight, Store as StoreIcon } from 'lucide-react';
+import { Card, CardContent } from '../components/ui';
+import { ChevronRight, Store as StoreIcon } from 'lucide-react';
 
 const StoreSelect = () => {
   const [stores, setStores] = useState([]);
@@ -26,6 +26,8 @@ const StoreSelect = () => {
   const handleSelectStore = async (storeId) => {
     try {
       const res = await createList(storeId);
+      // Save session
+      localStorage.setItem('activeListId', res.data.id);
       navigate(`/list/${res.data.id}`);
     } catch (err) {
       console.error("Failed to create list", err);
@@ -34,8 +36,6 @@ const StoreSelect = () => {
 
   if (loading) return <div className="p-8 text-center">Loading stores...</div>;
 
-      // Save session
-      localStorage.setItem('activeListId', res.data.id);
   return (
     <div className="space-y-6 p-4">
       <div className="space-y-2">
