@@ -45,21 +45,21 @@ const Home = () => {
       {/* Main Content (Centered) */}
       <div className="relative z-20 flex-1 flex flex-col items-center justify-center text-center space-y-8 p-6 max-w-md w-full animate-in fade-in zoom-in duration-1000">
         
-        {/* APP LOGO - Transparent Hack */}
+        {/* APP LOGO - Refined Transparency */}
         <div className="flex flex-col items-center">
             {/* 
-               The 'mix-blend-mode: screen' + 'invert' trick:
-               1. invert(1): Turns White BG -> Black. Turns Black Text -> White.
-               2. grayscale(1): Removes color noise.
-               3. brightness(2): Makes the white text pop.
-               4. mix-blend-screen: Makes the Black BG transparent.
+               Updated Filter:
+               contrast(500%) -> Pushes grey artifacts to pure black or pure white.
+               grayscale(1) -> Removes color noise.
+               invert(1) -> Flips Black Text to White, White BG to Black.
+               mix-blend-screen -> Hides the Black BG.
             */}
             <img 
                 src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/h01enox1_GroceryGo-logo.jpg" 
                 alt="GroceryGo" 
-                className="w-56 h-auto object-contain mb-4"
+                className="w-64 h-auto object-contain mb-4"
                 style={{ 
-                    filter: 'invert(1) grayscale(1) brightness(200%) contrast(200%)', 
+                    filter: 'grayscale(100%) contrast(500%) invert(100%)',
                     mixBlendMode: 'screen' 
                 }}
             />
