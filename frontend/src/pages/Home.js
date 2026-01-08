@@ -45,15 +45,13 @@ const Home = () => {
       {/* Main Content (Centered) */}
       <div className="relative z-20 flex-1 flex flex-col items-center justify-center text-center space-y-8 p-6 max-w-md w-full animate-in fade-in zoom-in duration-1000">
         
-        {/* APP LOGO - SVG Implementation */}
+        {/* APP LOGO - SVG */}
         <div className="flex flex-col items-center">
             <img 
                 src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/c8otiebj_GroceryGo-logo%203.svg" 
                 alt="GroceryGo" 
                 className="w-64 h-auto object-contain mb-4"
                 style={{ 
-                    // SVG is Black. Invert(1) turns it Pure White.
-                    // brightness(2) makes it extra bright to pop against video.
                     filter: 'invert(1) brightness(200%) drop-shadow(0 4px 6px rgba(0,0,0,0.5))' 
                 }}
             />
@@ -75,13 +73,18 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Footer Branding (Get2) */}
-      <div className="relative z-20 pb-8 flex flex-col items-center opacity-80 hover:opacity-100 transition-opacity">
-          <span className="text-[10px] text-white/60 uppercase tracking-widest mb-2 font-semibold">Powered By</span>
+      {/* Footer Branding (Get2) - Updated SVG & Padding */}
+      <div className="relative z-20 pb-24 flex flex-col items-center opacity-90 transition-opacity">
+          <span className="text-xs text-white/70 uppercase tracking-[0.2em] mb-3 font-bold shadow-sm">
+              Powered By
+          </span>
           <img 
-            src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/kkrjknkt_get2_logo.png" 
+            src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/84q7ml2j_get2_logo%201.svg" 
             alt="Get2" 
-            className="h-8 w-auto drop-shadow-lg"
+            className="h-12 w-auto drop-shadow-lg"
+            style={{ 
+                filter: 'invert(1) brightness(200%) drop-shadow(0 2px 4px rgba(0,0,0,0.5))' 
+            }}
           />
       </div>
     </div>
