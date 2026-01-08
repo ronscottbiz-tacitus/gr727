@@ -20,7 +20,7 @@ const Home = () => {
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-slate-900 flex flex-col items-center justify-center">
+    <div className="relative h-screen w-full overflow-hidden bg-slate-900 flex flex-col items-center justify-between">
       {/* Background Video */}
       <video
         ref={videoRef}
@@ -31,7 +31,7 @@ const Home = () => {
         onTimeUpdate={handleTimeUpdate}
         onLoadedData={handleLoadedData}
         className="absolute top-0 left-0 min-w-full min-h-full object-cover z-0 transition-opacity duration-500 ease-in-out"
-        style={{ opacity: opacity * 0.7 }} // Lower opacity slightly for logo contrast
+        style={{ opacity: opacity * 0.7 }}
       >
         <source 
           src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/k1b03mb2_Claymation_Grocery_App_Video_Generation.mp4" 
@@ -42,17 +42,18 @@ const Home = () => {
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/40 z-10" />
 
-      {/* Content */}
-      <div className="relative z-20 flex flex-col items-center text-center space-y-8 p-6 max-w-md animate-in fade-in zoom-in duration-1000">
+      {/* Main Content (Centered) */}
+      <div className="relative z-20 flex-1 flex flex-col items-center justify-center text-center space-y-8 p-6 max-w-md w-full animate-in fade-in zoom-in duration-1000">
         
-        {/* Brand Logo */}
+        {/* APP LOGO */}
         <div className="flex flex-col items-center">
-            <img 
-                src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/kkrjknkt_get2_logo.png" 
-                alt="GroceryGo Logo" 
-                className="w-48 h-auto drop-shadow-2xl mb-4"
-            />
-            {/* Keeping the subtitle but removing the H1 since Logo replaces it */}
+            <div className="rounded-2xl overflow-hidden shadow-2xl mb-4 border-2 border-white/20">
+                <img 
+                    src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/h01enox1_GroceryGo-logo.jpg" 
+                    alt="GroceryGo" 
+                    className="w-48 h-auto object-cover"
+                />
+            </div>
             <p className="text-blue-100 text-lg font-medium drop-shadow-md max-w-xs">
                 Your magic compass for every store.
             </p>
@@ -69,11 +70,16 @@ const Home = () => {
             Find a Store
           </Button>
         </div>
-        
-        {/* Footer Text */}
-        <p className="text-white/60 text-xs mt-8">
-          Optimized for Safeway, Target, and Home Depot
-        </p>
+      </div>
+
+      {/* Footer Branding (Get2) */}
+      <div className="relative z-20 pb-8 flex flex-col items-center opacity-80 hover:opacity-100 transition-opacity">
+          <span className="text-[10px] text-white/60 uppercase tracking-widest mb-2 font-semibold">Powered By</span>
+          <img 
+            src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/kkrjknkt_get2_logo.png" 
+            alt="Get2" 
+            className="h-8 w-auto drop-shadow-lg"
+          />
       </div>
     </div>
   );
