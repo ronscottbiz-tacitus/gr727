@@ -73,7 +73,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Footer Branding (Get2) - Updated SVG & Padding */}
+      {/* Footer Branding (Get2) - Fixed Transparency */}
       <div className="relative z-20 pb-24 flex flex-col items-center opacity-90 transition-opacity">
           <span className="text-xs text-white/70 uppercase tracking-[0.2em] mb-3 font-bold shadow-sm">
               Powered By
@@ -83,7 +83,9 @@ const Home = () => {
             alt="Get2" 
             className="h-12 w-auto drop-shadow-lg"
             style={{ 
-                filter: 'invert(1) brightness(200%) drop-shadow(0 2px 4px rgba(0,0,0,0.5))' 
+                // Adding mixBlendMode: 'screen' to remove the black box artifact
+                filter: 'invert(1) brightness(200%) contrast(200%)',
+                mixBlendMode: 'screen'
             }}
           />
       </div>
