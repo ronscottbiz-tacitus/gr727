@@ -1,20 +1,45 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui';
 import { MapPin } from 'lucide-react';
 
 const Home = () => {
   const navigate = useNavigate();
+  const videoRef = useRef(null);
+  const [opacity, setOpacity] = useState(0); // Start hidden, fade in
+
+  const handleTimeUpdate = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Fade in at start
+    if (video.currentTime < 0.5) {
+        setOpacity(1); 
+    }
+    
+    // Fade out at end (0.5s before end)
+    if (video.duration && video.currentTime > video.duration - 0.5) {
+        setOpacity(0);
+    }
+  };
+
+  const handleLoadedData = () => {
+      setOpacity(1); // Initial fade in
+  };
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-slate-900 flex flex-col items-center justify-center">
-      {/* Background Video */}
+      {/* Background Video with Soft Loop Transition */}
       <video
+        ref={videoRef}
         autoPlay
         loop
         muted
         playsInline
-        className="absolute top-0 left-0 min-w-full min-h-full object-cover z-0 opacity-80"
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedData={handleLoadedData}
+        className="absolute top-0 left-0 min-w-full min-h-full object-cover z-0 transition-opacity duration-500 ease-in-out"
+        style={{ opacity: opacity * 0.8 }} // Max opacity 0.8 for bg effect
       >
         <source 
           src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/k1b03mb2_Claymation_Grocery_App_Video_Generation.mp4" 
