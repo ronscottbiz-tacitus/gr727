@@ -100,7 +100,7 @@ const Home = () => {
               Powered By
           </span>
           <img 
-            src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/29rgzsbk_get2_logo%206.svg" 
+            src={process.env.PUBLIC_URL + "/assets/brand.svg"} 
             alt="Get2" 
             className="h-12 w-auto drop-shadow-lg"
             style={{ 
