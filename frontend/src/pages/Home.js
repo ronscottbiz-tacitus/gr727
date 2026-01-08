@@ -56,7 +56,7 @@ const Home = () => {
                 }}
             />
             <p className="text-white text-lg font-medium drop-shadow-md max-w-xs">
-                Right where go need to go
+                Right where you need to go
             </p>
         </div>
 
