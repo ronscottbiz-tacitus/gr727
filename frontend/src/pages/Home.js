@@ -43,7 +43,7 @@ const Home = () => {
         style={{ opacity: opacity * 0.7 }}
       >
         <source 
-          src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/k1b03mb2_Claymation_Grocery_App_Video_Generation.mp4" 
+          src={process.env.PUBLIC_URL + "/assets/video.mp4"} 
           type="video/mp4" 
         />
       </video>
