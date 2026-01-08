@@ -94,10 +94,10 @@ const Navigation = () => {
           </div>
       </div>
 
-      {/* Floating Action Button for Finish (Only if done) */}
+      {/* Floating Action Button for Finish (Only if done) - RAISED HIGHER */}
       {pendingItems.length === 0 && items.length > 0 && !isSheetExpanded && (
-          <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 w-auto animate-in slide-in-from-bottom-5 fade-in duration-300">
-              <Button className="bg-green-600 hover:bg-green-700 h-12 px-8 rounded-full shadow-xl font-bold" onClick={() => navigate(`/list/${listId}/complete`)}>
+          <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 z-20 w-auto animate-in slide-in-from-bottom-5 fade-in duration-300">
+              <Button className="bg-green-600 hover:bg-green-700 h-14 px-8 rounded-full shadow-2xl font-bold text-lg border-2 border-white/20" onClick={() => navigate(`/list/${listId}/complete`)}>
                   Finish Trip
               </Button>
           </div>
@@ -107,7 +107,7 @@ const Navigation = () => {
       <div 
         ref={sheetRef}
         className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-20 transition-all duration-300 ease-in-out flex flex-col border-t border-slate-100
-            ${isSheetExpanded ? 'h-[70vh]' : 'h-16'}`} // Default h-16 (tiny bar)
+            ${isSheetExpanded ? 'h-[70vh]' : 'h-16'}`}
       >
           {/* Handle / Minimal Header */}
           <div 
@@ -132,7 +132,7 @@ const Navigation = () => {
               {isSheetExpanded ? <ChevronDown className="text-slate-400" /> : <ChevronUp className="text-slate-400" />}
           </div>
 
-          {/* List Content (Only visible when expanded) */}
+          {/* List Content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 pb-20"> 
                {pendingItems.map((item) => {
                    const Icon = getCategoryIcon(item.category);
