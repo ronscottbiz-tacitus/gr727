@@ -45,7 +45,7 @@ const Home = () => {
       {/* Main Content (Centered) */}
       <div className="relative z-20 flex-1 flex flex-col items-center justify-center text-center space-y-8 p-6 max-w-md w-full animate-in fade-in zoom-in duration-1000">
         
-        {/* APP LOGO - SVG */}
+        {/* APP LOGO */}
         <div className="flex flex-col items-center">
             <img 
                 src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/c8otiebj_GroceryGo-logo%203.svg" 
@@ -60,11 +60,11 @@ const Home = () => {
             </p>
         </div>
 
-        {/* Action Button */}
+        {/* Action Button - Updated to Transparent Outline Style */}
         <div className="w-full pt-4">
           <Button 
             size="lg" 
-            className="w-full text-lg h-14 bg-blue-600 hover:bg-blue-700 text-white shadow-xl border border-blue-400/30 rounded-xl transition-transform hover:scale-105" 
+            className="w-full text-lg h-14 bg-transparent border-2 border-white/90 text-white font-semibold shadow-xl rounded-xl transition-all duration-300 hover:bg-white hover:text-slate-900 hover:scale-105 active:scale-95 backdrop-blur-sm" 
             onClick={() => navigate('/stores')}
           >
             <MapPin className="mr-2 h-5 w-5" />
@@ -73,7 +73,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Footer Branding (Get2) - Fixed Transparency */}
+      {/* Footer Branding */}
       <div className="relative z-20 pb-24 flex flex-col items-center opacity-90 transition-opacity">
           <span className="text-xs text-white/70 uppercase tracking-[0.2em] mb-3 font-bold shadow-sm">
               Powered By
@@ -83,7 +83,6 @@ const Home = () => {
             alt="Get2" 
             className="h-12 w-auto drop-shadow-lg"
             style={{ 
-                // Adding mixBlendMode: 'screen' to remove the black box artifact
                 filter: 'invert(1) brightness(200%) contrast(200%)',
                 mixBlendMode: 'screen'
             }}
