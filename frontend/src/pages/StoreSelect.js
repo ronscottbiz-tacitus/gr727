@@ -34,6 +34,8 @@ const StoreSelect = () => {
 
   if (loading) return <div className="p-8 text-center">Loading stores...</div>;
 
+      // Save session
+      localStorage.setItem('activeListId', res.data.id);
   return (
     <div className="space-y-6 p-4">
       <div className="space-y-2">
