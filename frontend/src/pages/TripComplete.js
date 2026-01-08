@@ -24,7 +24,7 @@ const TripComplete = () => {
         className="absolute top-0 left-0 min-w-full min-h-full object-cover z-0 opacity-60 blur-sm scale-105" // Added blur and scale to avoid edge artifacts
       >
         <source 
-          src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/k1b03mb2_Claymation_Grocery_App_Video_Generation.mp4" 
+          src={process.env.PUBLIC_URL + "/assets/video.mp4"} 
           type="video/mp4" 
         />
       </video>
