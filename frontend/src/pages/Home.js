@@ -45,22 +45,16 @@ const Home = () => {
       {/* Main Content (Centered) */}
       <div className="relative z-20 flex-1 flex flex-col items-center justify-center text-center space-y-8 p-6 max-w-md w-full animate-in fade-in zoom-in duration-1000">
         
-        {/* APP LOGO - Refined Transparency */}
+        {/* APP LOGO - SVG Implementation */}
         <div className="flex flex-col items-center">
-            {/* 
-               Updated Filter:
-               contrast(500%) -> Pushes grey artifacts to pure black or pure white.
-               grayscale(1) -> Removes color noise.
-               invert(1) -> Flips Black Text to White, White BG to Black.
-               mix-blend-screen -> Hides the Black BG.
-            */}
             <img 
-                src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/h01enox1_GroceryGo-logo.jpg" 
+                src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/c8otiebj_GroceryGo-logo%203.svg" 
                 alt="GroceryGo" 
                 className="w-64 h-auto object-contain mb-4"
                 style={{ 
-                    filter: 'grayscale(100%) contrast(500%) invert(100%)',
-                    mixBlendMode: 'screen' 
+                    // SVG is Black. Invert(1) turns it Pure White.
+                    // brightness(2) makes it extra bright to pop against video.
+                    filter: 'invert(1) brightness(200%) drop-shadow(0 4px 6px rgba(0,0,0,0.5))' 
                 }}
             />
             <p className="text-blue-100 text-lg font-medium drop-shadow-md max-w-xs">
