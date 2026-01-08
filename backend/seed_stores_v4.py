@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from typing import List
 import uuid
 
-load_dotenv("/app/backend/.env")
+load_dotenv(Path(__file__).parent / '.env')
 
 class Aisle(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
