@@ -55,8 +55,8 @@ const Home = () => {
                     filter: 'invert(1) brightness(200%) drop-shadow(0 4px 6px rgba(0,0,0,0.5))' 
                 }}
             />
-            <p className="text-blue-100 text-lg font-medium drop-shadow-md max-w-xs">
-                Your magic compass for every store.
+            <p className="text-white text-lg font-medium drop-shadow-md max-w-xs">
+                Right where go need to go
             </p>
         </div>
 
@@ -73,7 +73,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Footer Branding (Get2) - Updated Clean SVG */}
+      {/* Footer Branding (Get2) */}
       <div className="relative z-20 pb-24 flex flex-col items-center opacity-90 transition-opacity">
           <span className="text-xs text-white/70 uppercase tracking-[0.2em] mb-3 font-bold shadow-sm">
               Powered By
@@ -83,7 +83,6 @@ const Home = () => {
             alt="Get2" 
             className="h-12 w-auto drop-shadow-lg"
             style={{ 
-                // Clean SVG (Black on Transparent) -> Invert to White
                 filter: 'invert(1) brightness(200%) drop-shadow(0 2px 4px rgba(0,0,0,0.5))'
             }}
           />
