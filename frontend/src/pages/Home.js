@@ -57,7 +57,7 @@ const Home = () => {
         {/* APP LOGO - SVG */}
         <div className="flex flex-col items-center">
             <img 
-                src="https://customer-assets.emergentagent.com/job_app-priority/artifacts/c8otiebj_GroceryGo-logo%203.svg" 
+                src={process.env.PUBLIC_URL + "/assets/logo.svg"} 
                 alt="GroceryGo" 
                 className="w-64 h-auto object-contain mb-4"
                 style={{ 
