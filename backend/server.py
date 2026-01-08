@@ -20,8 +20,7 @@ load_dotenv(ROOT_DIR / '.env')
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
-db_name = os.environ.get('DB_NAME', 'grocerygo')
-db = client[db_name]
+db = client[os.environ['DB_NAME']]
 
 # AI Setup
 emergent_key = os.environ.get("EMERGENT_LLM_KEY")
