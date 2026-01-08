@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRoute, updateItemStatus, getList, getStore } from '../api';
 import { Button } from '../components/ui';
-import { Check, ArrowLeft, MapPin, ChevronUp, ChevronDown, ShoppingBag } from 'lucide-react';
+import { Check, ArrowLeft, ChevronUp, ChevronDown, ShoppingBag } from 'lucide-react';
 import StoreMap from '../components/StoreMap';
 import { getCategoryIcon } from '../utils/categoryIcons';
 
@@ -44,24 +44,22 @@ const Navigation = () => {
     init();
   }, [listId]);
 
-  const handleToggleItem = async (itemId, isDone) => {
-    setItems(prev => prev.map(i => i.id === itemId ? { ...i, is_done: isDone } : i));
+  const handleToggleItem = async (item) => {
+    const isDone = !item.is_done;
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_done: isDone } : i));
     
-    if (isDone && storeData) {
-        const item = items.find(i => i.id === itemId);
-        if (item && item.aisle_id) {
-            const aisle = storeData.aisles.find(a => a.id === item.aisle_id);
-            if (aisle) {
-                setUserLocation({
-                    x: aisle.x + (aisle.width / 2),
-                    y: aisle.y + (aisle.height / 2)
-                });
-            }
+    if (isDone && storeData && item.aisle_id) {
+        const aisle = storeData.aisles.find(a => a.id === item.aisle_id);
+        if (aisle) {
+            setUserLocation({
+                x: aisle.x + (aisle.width / 2),
+                y: aisle.y + (aisle.height / 2)
+            });
         }
     }
 
     try {
-        await updateItemStatus(listId, itemId, isDone);
+        await updateItemStatus(listId, item.id, isDone);
     } catch(e) { console.error(e); }
   };
 
@@ -75,7 +73,7 @@ const Navigation = () => {
   const doneItems = items.filter(i => i.is_done);
 
   return (
-    <div className="h-screen w-full bg-slate-900 relative overflow-hidden flex flex-col">
+    <div className="h-screen w-full bg-slate-50 relative overflow-hidden flex flex-col">
       
       {/* FULL SCREEN MAP LAYER */}
       <div className="absolute inset-0 z-0">
@@ -84,48 +82,64 @@ const Navigation = () => {
             items={items} 
             userLocation={userLocation}
             onEntranceClick={handleSetEntrance}
+            onItemClick={handleToggleItem}
           />
       </div>
 
       {/* Top Bar Overlay */}
       <div className="absolute top-0 left-0 right-0 p-4 z-10 flex justify-between items-start pointer-events-none">
-          <div className="bg-white/90 backdrop-blur shadow-lg rounded-full px-4 py-2 flex items-center pointer-events-auto" onClick={() => navigate('/')}>
+          <div className="bg-white/90 backdrop-blur shadow-lg rounded-full px-4 py-2 flex items-center pointer-events-auto cursor-pointer border border-white/20" onClick={() => navigate('/')}>
                <ArrowLeft className="h-5 w-5 mr-2 text-slate-700" />
                <span className="font-bold text-slate-800">{storeData?.name}</span>
           </div>
       </div>
 
-      {/* Floating Bottom Sheet List */}
+      {/* Floating Action Button for Finish (Only if done) */}
+      {pendingItems.length === 0 && items.length > 0 && !isSheetExpanded && (
+          <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 w-auto animate-in slide-in-from-bottom-5 fade-in duration-300">
+              <Button className="bg-green-600 hover:bg-green-700 h-12 px-8 rounded-full shadow-xl font-bold" onClick={() => navigate(`/list/${listId}/complete`)}>
+                  Finish Trip
+              </Button>
+          </div>
+      )}
+
+      {/* Minimized Bottom Sheet */}
       <div 
         ref={sheetRef}
-        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.2)] z-20 transition-all duration-500 ease-in-out flex flex-col
-            ${isSheetExpanded ? 'h-[80vh]' : 'h-[25vh]'}`}
+        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-20 transition-all duration-300 ease-in-out flex flex-col border-t border-slate-100
+            ${isSheetExpanded ? 'h-[70vh]' : 'h-16'}`} // Default h-16 (tiny bar)
       >
-          {/* Handle / Header */}
+          {/* Handle / Minimal Header */}
           <div 
-             className="w-full p-4 flex flex-col items-center cursor-pointer flex-none border-b border-slate-100"
+             className="w-full h-16 flex items-center justify-between px-6 cursor-pointer flex-none bg-white rounded-t-2xl"
              onClick={() => setIsSheetExpanded(!isSheetExpanded)}
           >
-              <div className="w-12 h-1.5 bg-slate-300 rounded-full mb-3" />
-              <div className="w-full flex justify-between items-center px-2">
-                  <div className="flex items-center">
-                      <ShoppingBag className="text-blue-600 mr-2 h-5 w-5" />
-                      <span className="font-bold text-lg text-slate-800">
-                          {pendingItems.length} items left
-                      </span>
+              <div className="flex items-center space-x-3">
+                  <div className="bg-blue-100 p-2 rounded-full">
+                      <ShoppingBag className="text-blue-600 h-4 w-4" />
                   </div>
-                  {isSheetExpanded ? <ChevronDown className="text-slate-400" /> : <ChevronUp className="text-slate-400" />}
+                  <div>
+                      <span className="font-bold text-slate-800 text-sm block">
+                          {pendingItems.length} items remaining
+                      </span>
+                      {pendingItems.length > 0 && (
+                          <span className="text-xs text-slate-500 block">
+                              Next: {pendingItems[0].name}
+                          </span>
+                      )}
+                  </div>
               </div>
+              {isSheetExpanded ? <ChevronDown className="text-slate-400" /> : <ChevronUp className="text-slate-400" />}
           </div>
 
-          {/* List Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 pb-20"> {/* Added pb-20 for logo/CTA clearance */}
+          {/* List Content (Only visible when expanded) */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 pb-20"> 
                {pendingItems.map((item) => {
                    const Icon = getCategoryIcon(item.category);
                    return (
                     <div 
                         key={item.id} 
-                        onClick={() => handleToggleItem(item.id, true)}
+                        onClick={() => handleToggleItem(item)}
                         className="flex items-center p-3 bg-white border border-slate-200 rounded-xl shadow-sm active:scale-[0.98] transition-transform"
                     >
                         <div className="h-10 w-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center mr-3 border border-red-100">
@@ -144,19 +158,11 @@ const Navigation = () => {
                    <div className="pt-4 mt-4 border-t border-slate-200">
                        <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Done</h4>
                        {doneItems.map(item => (
-                           <div key={item.id} className="flex items-center p-2 opacity-50" onClick={() => handleToggleItem(item.id, false)}>
+                           <div key={item.id} className="flex items-center p-2 opacity-50" onClick={() => handleToggleItem(item)}>
                                <Check className="h-4 w-4 mr-2 text-green-600" />
                                <span className="text-slate-500 line-through">{item.name}</span>
                            </div>
                        ))}
-                   </div>
-               )}
-
-               {pendingItems.length === 0 && (
-                   <div className="mb-12"> {/* Wrapper for extra space */}
-                       <Button className="w-full mt-4 bg-green-600 h-12 text-lg shadow-xl" onClick={() => navigate(`/list/${listId}/complete`)}>
-                           Finish Shopping
-                       </Button>
                    </div>
                )}
           </div>
