@@ -1,31 +1,36 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../components/ui';
 import { themes } from '../utils/themes';
 import RetailerShell from '../components/RetailerShell';
 import { Map, ArrowRight } from 'lucide-react';
 import { getStores, createList } from '../api';
 
-const RetailerHome = ({ retailerId }) => {
+const RetailerHome = () => {
+  const { retailerId } = useParams();
   const navigate = useNavigate();
-  const theme = themes[retailerId];
+  const theme = themes[retailerId] || themes.safeway; // Fallback to Safeway
 
   // Logic to start the GroceryGo flow
   const handleStartInStoreMode = async () => {
       try {
           // 1. Find the store ID for this retailer
-          // In a real integration, the Host App knows its own Store ID.
-          // We will search for it.
           const storesRes = await getStores();
           const store = storesRes.data.find(s => s.name.includes(theme.name));
           
           if (store) {
               const listRes = await createList(store.id);
-              // Navigate to List Builder, but wrapped in Demo context
-              // We pass retailerId in URL to keep the theme
               navigate(`/demo/${retailerId}/list/${listRes.data.id}`);
           } else {
-              alert("Demo Store not found in DB. Did you seed?");
+              // Fallback if store not found in DB (e.g. newly deployed)
+              // Just use first store or alert
+              if (storesRes.data.length > 0) {
+                  const firstStore = storesRes.data[0];
+                  const listRes = await createList(firstStore.id);
+                  navigate(`/demo/${retailerId}/list/${listRes.data.id}`);
+              } else {
+                  alert("No stores found in database. Please allow time for seed or redeploy.");
+              }
           }
       } catch(e) {
           console.error(e);
@@ -47,15 +52,15 @@ const RetailerHome = ({ retailerId }) => {
             {/* The Integration Point */}
             <div className="p-4 -mt-6 relative z-10">
                 <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center text-center space-y-4 border border-slate-100">
-                    <div className={`p-3 rounded-full ${theme.color} bg-opacity-10`}>
-                        <Map className={`h-8 w-8 ${theme.text}`} />
+                    <div className={`p-3 rounded-full bg-opacity-10`} style={{ backgroundColor: theme.accent }}>
+                        <Map className={`h-8 w-8`} style={{ color: theme.accent }} />
                     </div>
                     <div>
                         <h3 className="text-xl font-bold text-slate-900">Shopping In-Store?</h3>
                         <p className="text-slate-500 text-sm mt-1">Use our new visual navigator to find items instantly.</p>
                     </div>
                     <Button 
-                        className={`w-full h-12 text-lg ${theme.color} ${theme.hover} text-white shadow-md`}
+                        className={`w-full h-12 text-lg text-white shadow-md ${theme.color} ${theme.hover}`}
                         onClick={handleStartInStoreMode}
                     >
                         Start In-Store Mode
