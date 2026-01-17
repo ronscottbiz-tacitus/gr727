@@ -1,11 +1,9 @@
 import React, { useMemo } from 'react';
 import { getCategoryIcon } from '../utils/categoryIcons';
 
-const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClick }) => {
-    // Default canvas size
+const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClick, accentColor = '#3b82f6' }) => {
     const WIDTH = 100;
     const HEIGHT = 100;
-
     const ENTRANCE_X = 50;
     const ENTRANCE_Y = 95;
 
@@ -26,7 +24,6 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClic
 
     if (!store) return null;
 
-    // Helper to get deterministic hash from string
     const getHash = (str) => {
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
@@ -39,45 +36,35 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClic
     return (
         <div className="w-full h-full bg-slate-50 relative overflow-hidden touch-none select-none">
             <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full h-full">
-                {/* Background Grid */}
                 <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
                     <path d="M 10 0 L 0 0 0 10" fill="none" stroke="black" strokeOpacity="0.03"/>
                 </pattern>
                 <rect width="100" height="100" fill="url(#grid)" />
 
-                {/* Aisles Rendered as SHELVES + PATH */}
                 {store.aisles.map(aisle => {
                     const isVertical = aisle.height > aisle.width;
-                    const SHELF_DEPTH = 1.5; // Visual depth of shelf
+                    const SHELF_DEPTH = 1.5;
 
                     return (
                         <g key={aisle.id}>
-                            {/* The Floor (Walkable Area) */}
                             <rect 
                                 x={aisle.x} y={aisle.y} 
                                 width={aisle.width} height={aisle.height} 
                                 fill="#e2e8f0" 
                                 rx="1"
                             />
-
-                            {/* The Shelves (Darker Borders) */}
                             {isVertical ? (
                                 <>
-                                    {/* Left Shelf */}
                                     <rect x={aisle.x} y={aisle.y} width={SHELF_DEPTH} height={aisle.height} fill="#94a3b8" rx="0.5" />
-                                    {/* Right Shelf */}
                                     <rect x={aisle.x + aisle.width - SHELF_DEPTH} y={aisle.y} width={SHELF_DEPTH} height={aisle.height} fill="#94a3b8" rx="0.5" />
                                 </>
                             ) : (
                                 <>
-                                    {/* Top Shelf */}
                                     <rect x={aisle.x} y={aisle.y} width={aisle.width} height={SHELF_DEPTH} fill="#94a3b8" rx="0.5" />
-                                    {/* Bottom Shelf */}
                                     <rect x={aisle.x} y={aisle.y + aisle.height - SHELF_DEPTH} width={aisle.width} height={SHELF_DEPTH} fill="#94a3b8" rx="0.5" />
                                 </>
                             )}
                             
-                            {/* Aisle Name Label (Centered) */}
                             {aisle.width > 8 && aisle.height > 8 && (
                                 <text 
                                     x={aisle.x + aisle.width/2} 
@@ -97,31 +84,23 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClic
                     );
                 })}
 
-                {/* ITEM ICONS (Snapped to Shelves) */}
                 {items.filter(i => !i.is_done && i.aisle_id).map((item, idx) => {
                     const aisle = store.aisles.find(a => a.id === item.aisle_id);
                     if (!aisle) return null;
 
                     const isVertical = aisle.height > aisle.width;
-                    const hash = getHash(item.id + item.name); // Deterministic randomness
-                    
-                    // 1. Determine Position along Length (0.1 to 0.9) to avoid edges
-                    // Use modulo to spread items: (hash % 100) / 100
+                    const hash = getHash(item.id + item.name); 
                     const lengthPos = 0.1 + ((hash % 80) / 100); 
-                    
-                    // 2. Determine Side (Left/Right or Top/Bottom)
                     const isSideA = hash % 2 === 0;
 
                     let itemX, itemY;
-                    const OFFSET = 0; // Shift slightly onto the shelf
+                    const OFFSET = 0; 
 
                     if (isVertical) {
                         itemY = aisle.y + (aisle.height * lengthPos);
-                        // Left or Right
                         itemX = isSideA ? (aisle.x + OFFSET) : (aisle.x + aisle.width - OFFSET);
                     } else {
                         itemX = aisle.x + (aisle.width * lengthPos);
-                        // Top or Bottom
                         itemY = isSideA ? (aisle.y + OFFSET) : (aisle.y + aisle.height - OFFSET);
                     }
 
@@ -134,22 +113,17 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClic
                             onClick={() => onItemClick && onItemClick(item)}
                             className="cursor-pointer"
                         >
-                            {/* Hit Area */}
                             <circle cx={itemX} cy={itemY} r="5" fill="transparent" />
-
-                            {/* Pulsing Ring */}
-                            <circle cx={itemX} cy={itemY} r="3" fill="#ef4444" fillOpacity="0.2" className="animate-ping" />
-                            {/* Icon Background */}
-                            <circle cx={itemX} cy={itemY} r="2.2" fill="#ef4444" stroke="white" strokeWidth="0.2" />
+                            {/* Theme Color Pulse */}
+                            <circle cx={itemX} cy={itemY} r="3" fill={accentColor} fillOpacity="0.2" className="animate-ping" />
+                            <circle cx={itemX} cy={itemY} r="2.2" fill={accentColor} stroke="white" strokeWidth="0.2" />
                             
-                            {/* Icon */}
                             <foreignObject x={itemX - 1.5} y={itemY - 1.5} width="3" height="3">
                                 <div className="flex items-center justify-center w-full h-full text-white pointer-events-none">
                                     <IconComponent size={2.5} strokeWidth={2.5} />
                                 </div>
                             </foreignObject>
 
-                            {/* Text Label */}
                             <text 
                                 x={itemX} 
                                 y={labelY} 
@@ -166,7 +140,6 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClic
                     )
                 })}
 
-                {/* User Location */}
                 {userLocation && (
                     <g transform={`translate(${userLocation.x}, ${userLocation.y})`} className="transition-all duration-700 ease-out pointer-events-none">
                          <circle r="5" fill="#3b82f6" fillOpacity="0.3" className="animate-ping" />
@@ -174,7 +147,6 @@ const StoreMap = ({ store, items = [], userLocation, onEntranceClick, onItemClic
                     </g>
                 )}
 
-                {/* Entrance Trigger */}
                 <g 
                     transform={`translate(${ENTRANCE_X}, ${ENTRANCE_Y})`} 
                     onClick={() => onEntranceClick && onEntranceClick({x: ENTRANCE_X, y: ENTRANCE_Y})}
