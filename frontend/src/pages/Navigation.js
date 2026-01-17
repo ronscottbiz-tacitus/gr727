@@ -5,9 +5,10 @@ import { Button } from '../components/ui';
 import { Check, ArrowLeft, ChevronUp, ChevronDown, ShoppingBag } from 'lucide-react';
 import StoreMap from '../components/StoreMap';
 import { getCategoryIcon } from '../utils/categoryIcons';
+import { themes } from '../utils/themes';
 
 const Navigation = () => {
-  const { listId } = useParams();
+  const { listId, retailerId } = useParams();
   const navigate = useNavigate();
   const [route, setRoute] = useState(null);
   const [storeData, setStoreData] = useState(null);
@@ -17,6 +18,7 @@ const Navigation = () => {
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
   
   const sheetRef = useRef(null);
+  const theme = retailerId ? themes[retailerId] : { color: 'bg-blue-600', hover: 'hover:bg-blue-700', accent: '#3b82f6' };
 
   useEffect(() => {
     const init = async () => {
@@ -83,21 +85,25 @@ const Navigation = () => {
             userLocation={userLocation}
             onEntranceClick={handleSetEntrance}
             onItemClick={handleToggleItem}
+            accentColor={theme.accent}
           />
       </div>
 
       {/* Top Bar Overlay */}
       <div className="absolute top-0 left-0 right-0 p-4 z-10 flex justify-between items-start pointer-events-none">
-          <div className="bg-white/90 backdrop-blur shadow-lg rounded-full px-4 py-2 flex items-center pointer-events-auto cursor-pointer border border-white/20" onClick={() => navigate('/')}>
+          <div className="bg-white/90 backdrop-blur shadow-lg rounded-full px-4 py-2 flex items-center pointer-events-auto cursor-pointer border border-white/20" onClick={() => navigate(retailerId ? `/demo/${retailerId}` : '/')}>
                <ArrowLeft className="h-5 w-5 mr-2 text-slate-700" />
                <span className="font-bold text-slate-800">{storeData?.name}</span>
           </div>
       </div>
 
-      {/* Floating Action Button for Finish (Only if done) - RAISED HIGHER */}
+      {/* Floating Action Button for Finish (Only if done) - Theme Colored */}
       {pendingItems.length === 0 && items.length > 0 && !isSheetExpanded && (
           <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 z-20 w-auto animate-in slide-in-from-bottom-5 fade-in duration-300">
-              <Button className="bg-green-600 hover:bg-green-700 h-14 px-8 rounded-full shadow-2xl font-bold text-lg border-2 border-white/20" onClick={() => navigate(`/list/${listId}/complete`)}>
+              <Button 
+                className={`${theme.color} ${theme.hover} h-14 px-8 rounded-full shadow-2xl font-bold text-lg border-2 border-white/20`} 
+                onClick={() => navigate(`/list/${listId}/complete`)}
+              >
                   Finish Trip
               </Button>
           </div>
@@ -115,10 +121,15 @@ const Navigation = () => {
              onClick={() => setIsSheetExpanded(!isSheetExpanded)}
           >
               <div className="flex items-center space-x-3">
-                  <div className="bg-blue-100 p-2 rounded-full">
-                      <ShoppingBag className="text-blue-600 h-4 w-4" />
+                  <div className={`p-2 rounded-full bg-opacity-10`} style={{ backgroundColor: theme.accent, opacity: 0.2 }}>
+                      <ShoppingBag className="h-4 w-4" style={{ color: theme.accent }} />
                   </div>
-                  <div>
+                  {/* Re-rendering ShoppingBag for color since bg opacity affects parent */}
+                  <div className="absolute left-8 pointer-events-none">
+                       <ShoppingBag className="h-4 w-4" style={{ color: theme.accent }} />
+                  </div>
+
+                  <div className="ml-4">
                       <span className="font-bold text-slate-800 text-sm block">
                           {pendingItems.length} items remaining
                       </span>
@@ -142,7 +153,10 @@ const Navigation = () => {
                         onClick={() => handleToggleItem(item)}
                         className="flex items-center p-3 bg-white border border-slate-200 rounded-xl shadow-sm active:scale-[0.98] transition-transform"
                     >
-                        <div className="h-10 w-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center mr-3 border border-red-100">
+                        <div 
+                            className="h-10 w-10 rounded-full flex items-center justify-center mr-3 border border-opacity-20"
+                            style={{ backgroundColor: `${theme.accent}20`, borderColor: theme.accent, color: theme.accent }}
+                        >
                              <Icon size={20} />
                         </div>
                         <div className="flex-1">
