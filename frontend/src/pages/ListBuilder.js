@@ -3,15 +3,20 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getList, addItem, removeItem, getStore } from '../api';
 import { Button, Input, Card, CardContent } from '../components/ui';
 import { Plus, Trash2, ArrowRight, ShoppingBag } from 'lucide-react';
+import RetailerShell from '../components/RetailerShell';
+import { themes } from '../utils/themes';
 
 const ListBuilder = () => {
-  const { listId } = useParams();
+  const { listId, retailerId } = useParams();
   const navigate = useNavigate();
   const [list, setList] = useState(null);
   const [store, setStore] = useState(null);
   const [newItem, setNewItem] = useState('');
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+
+  // Use Theme or Default
+  const theme = retailerId ? themes[retailerId] : { color: 'bg-blue-600', hover: 'hover:bg-blue-700' };
 
   useEffect(() => {
     const loadData = async () => {
@@ -63,14 +68,19 @@ const ListBuilder = () => {
       return "e.g. Milk, Bread, Apples...";
   };
 
-  if (loading) return <div className="p-8 text-center">Loading list...</div>;
+  const handleStart = () => {
+      const path = retailerId 
+        ? `/demo/${retailerId}/list/${listId}/navigate`
+        : `/list/${listId}/navigate`;
+      navigate(path);
+  };
 
-  return (
-    <div className="space-y-6 p-4 pb-48 relative min-h-screen"> {/* Increased bottom padding for content */}
+  const content = (
+    <div className="space-y-6 p-4 pb-48 relative min-h-screen">
       <div className="space-y-1">
         <h2 className="text-2xl font-bold">Shopping List</h2>
         <p className="text-slate-500 text-sm">
-            Shopping at <span className="font-semibold text-slate-700">{store?.name}</span>
+            Preparing your trip for <span className="font-semibold text-slate-700">{store?.name}</span>
         </p>
       </div>
 
@@ -82,7 +92,7 @@ const ListBuilder = () => {
           className="flex-1"
           autoFocus
         />
-        <Button type="submit" disabled={adding}>
+        <Button type="submit" disabled={adding} className={`${theme.color} ${theme.hover} text-white`}>
           <Plus className="h-5 w-5" />
         </Button>
       </form>
@@ -102,7 +112,7 @@ const ListBuilder = () => {
                 <span className="font-medium">{item.name}</span>
                 <span className="text-xs text-slate-500">
                   {item.aisle_name ? (
-                    <span className="text-blue-600 font-medium">{item.aisle_name}</span>
+                    <span className={`font-medium opacity-80`} style={{ color: theme.accent || '#2563eb' }}>{item.aisle_name}</span>
                   ) : (
                     <span className="text-orange-500 italic">Unmapped</span>
                   )}
@@ -122,10 +132,10 @@ const ListBuilder = () => {
       </div>
 
       {list?.items.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 max-w-md mx-auto z-10 pb-16 pt-4 px-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 max-w-md mx-auto z-10 pb-20 pt-4 px-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] safe-area-bottom">
           <Button 
-            className="w-full h-14 text-lg shadow-xl bg-blue-600 hover:bg-blue-700 rounded-xl" 
-            onClick={() => navigate(`/list/${listId}/navigate`)}
+            className={`w-full h-14 text-lg shadow-xl ${theme.color} ${theme.hover} text-white rounded-xl`}
+            onClick={handleStart}
           >
             Start Shopping
             <ArrowRight className="ml-2 h-5 w-5" />
@@ -134,6 +144,15 @@ const ListBuilder = () => {
       )}
     </div>
   );
+
+  if (loading) return <div className="p-8 text-center">Loading list...</div>;
+
+  // Wrap in Shell if Retailer Mode
+  if (retailerId) {
+      return <RetailerShell retailerId={retailerId}>{content}</RetailerShell>;
+  }
+
+  return content;
 };
 
 export default ListBuilder;
