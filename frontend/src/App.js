@@ -1,10 +1,9 @@
 import React from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
-import StoreSelect from "./pages/StoreSelect";
+import SalesDashboard from "./pages/SalesDashboard";
+import RetailerHome from "./pages/RetailerHome";
 import ListBuilder from "./pages/ListBuilder";
-import RouteOverview from "./pages/RouteOverview";
 import Navigation from "./pages/Navigation";
 import TripComplete from "./pages/TripComplete";
 
@@ -15,11 +14,14 @@ function App() {
       <BrowserRouter>
         <div className="max-w-md mx-auto bg-white min-h-screen shadow-xl overflow-hidden relative">
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/stores" element={<StoreSelect />} />
-            <Route path="/list/:listId" element={<ListBuilder />} />
-            <Route path="/list/:listId/route" element={<RouteOverview />} />
-            <Route path="/list/:listId/navigate" element={<Navigation />} />
+            {/* New Sales Flow */}
+            <Route path="/" element={<SalesDashboard />} />
+            <Route path="/demo/:retailerId" element={<RetailerHome />} />
+            
+            {/* Reused Components (Will need Logic update to handle retailerId prop/param) */}
+            <Route path="/demo/:retailerId/list/:listId" element={<ListBuilder />} />
+            <Route path="/list/:listId/navigate" element={<Navigation />} /> {/* Legacy or Direct */}
+            <Route path="/demo/:retailerId/list/:listId/navigate" element={<Navigation />} />
             <Route path="/list/:listId/complete" element={<TripComplete />} />
           </Routes>
         </div>
